@@ -19,18 +19,13 @@ fi
 
 set -eo pipefail
 
-# use trap for prefixes on stdOut and stdErr
+# TODO: for now not used - trap for prefixes on stdOut and stdErr
 set_trap() {
 	exec > >(trap "" INT TERM; sed 's/^/zorix: /')
 	exec 2> >(trap "" INT TERM; sed 's/^/zorix: (error) /' >&2)
 }
 
-unset_trap() {
-	trap - INT TERM
-}
-
 set_input() {
-	unset_trap
 	echo "################"
 	echo "### zOS ###"
 	echo "################"
@@ -41,8 +36,7 @@ set_input() {
 
 install_dotfiles() {
 	set_input "Do you want install custom dotfiles?" || return;
-	set_trap
-
+	
 	CFGS="./zos_configs"
 	git clone "https://mgs_props@bitbucket.org/mgs_props/configs.git" $CFGS
 	shopt -s dotglob	
@@ -54,7 +48,6 @@ install_dotfiles() {
 
 install_mcfly() {
 	set_input "Do you want install pkg mcfly for smart search history?" || return;
-	set_trap
 
 	AVAILABLE_SHELLS=$(tail -n +3 < /etc/shells)
 	WD_SHELLS=('bash' 'zsh' 'fish')
