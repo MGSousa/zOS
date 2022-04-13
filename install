@@ -1,0 +1,94 @@
+#!/bin/bash
+
+if [ "$(id -u)" = 0 ]; then
+    echo "###### ZORIX-OS ######"
+    echo "This script MUST NOT be run as root user since it makes changes"
+    echo "to the \$HOME directory of the \$USER executing this script."
+    echo "The \$HOME directory of the root user is, of course, '/root'."
+    echo "We don't want to mess around in there. So run this script as a"
+    echo "normal user. You will be asked for a sudo password when necessary."
+    exit 1
+fi
+
+# check if current system has X server installed and enabled
+if ! timeout 1s xset q &>/dev/null; then
+    echo "No X server at \$DISPLAY [$DISPLAY]" >&2
+    # TODO: install and enable X server
+    exit 1
+fi
+
+set -eo pipefail
+
+# use trap for prefixes on stdOut and stdErr
+exec > >(trap "" INT TERM; sed 's/^/zorix: /')
+exec 2> >(trap "" INT TERM; sed 's/^/zorix: (error) /' >&2)
+
+install_mcfly() {
+	AVAILABLE_SHELLS=$(tail -n +3 < /etc/shells)
+	WD_SHELLS=('bash' 'zsh' 'fish')
+
+	curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly || return 1
+	
+	for shell in $AVAILABLE_SHELLS; do
+        	CSH=$(echo "$shell" | tac -s'/' | head -1)
+
+        	for k in "${!WD_SHELLS[@]}"; do
+
+                	if [ "$CSH" = "${WD_SHELLS[k]}" ]; then
+                        	if [ "$CSH" = "fish" ]; then
+                                	echo -n "mcfly init $CSH | source" >> ~/.config/fish/config.fish
+                        	else
+                                	# shellcheck disable=SC2016 disable=SC2086
+                                	echo -n 'eval "$(mcfly init '$CSH')"' >> ~/."$CSH"rc
+                        	fi;
+                        	unset 'WD_SHELLS[k]'
+                	fi;
+        	done;
+	done
+}
+
+
+RELEASE="/etc/*-release"
+
+# shellcheck disable=SC2086
+OS=$( (grep ID_LIKE ${RELEASE} || grep ID ${RELEASE}) | awk -F= '{print $2}')
+
+# install base deps
+if [ "$OS" == "arch" ]; then
+	sudo pacman -Sy && \
+	sudo pacman --noconfirm -Sy git xmonad xmobar 
+		network-manager-applet lxsession libvirt 
+		libnotify dunst xcompmgr 
+		neofetch xwallpaper neovim shellcheck dialog
+		
+		# install "find" alternative 
+		fd
+		# install ripgrep
+		ripgrep
+
+elif [ "$OS" == "debian" ]; then
+	sudo apt upgrade -y && \
+	sudo apt install -y curl git xmonad xmobar dunst libnotify-bin lxsession 
+		xcompmgr neofetch xwallpaper neovim shellcheck dialog
+	
+		# install "find" alternative
+		fd-find
+		# install ripgrep
+		ripgrep
+fi;
+
+# set HOME on xmobarrc
+sed -i "s|\$HOME|$HOME|" .xmobar/xmobarrc && sed -i "s|\$HOME|$HOME|" .xmobar/xmobarrc_bat
+
+# install mcfly package for smart shell history manager
+install_mcfly
+
+# choose to install custom nvim profile
+dialog --colors --title "Zorix OS " --yes-label "Yes" --no-label "No" --yesno "Install custom nvim profile?" 9 60 || exit 1;
+git clone --depth=1 https://github.com/MGSousa/nvimrc.git ~/.vim
+sh ~/.vim/install.sh
+nvim +PlugInstall
+
+# choose to restart OS
+dialog --colors --title "Zorix OS " --yes-label "Yes" --no-label "No" --yesno "Installation successfull !!\n Do you want to reboot now?" 9 60 && reboot;
+
