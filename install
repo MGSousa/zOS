@@ -26,8 +26,9 @@ set_trap() {
 }
 
 set_input() {
-	echo "################"
-	echo "### zOS ###"
+	printf "\n"
+	echo "::::::::::::::::"
+	echo "::::: zOS ::::::"
 	echo "################"
 
 	echo " -  Asked: '$1'"
@@ -35,7 +36,7 @@ set_input() {
 }
 
 install_dotfiles() {
-	set_input "Do you want install custom dotfiles?" || return;
+	set_input "Do you want install custom dotfiles?" || return 0;
 	
 	CFGS="./zos_configs"
 	git clone "https://mgs_props@bitbucket.org/mgs_props/configs.git" $CFGS
@@ -47,12 +48,12 @@ install_dotfiles() {
 }
 
 install_mcfly() {
-	set_input "Do you want install pkg mcfly for smart search history?" || return;
+	set_input "Do you want install pkg mcfly for smart search history?" || return 0;
 
 	AVAILABLE_SHELLS=$(tail -n +3 < /etc/shells)
 	WD_SHELLS=('bash' 'zsh' 'fish')
 
-	curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly || return 1
+	curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly --force || return 1
 	
 	for shell in $AVAILABLE_SHELLS; do
         	CSH=$(echo "$shell" | tac -s'/' | head -1)
@@ -72,6 +73,17 @@ install_mcfly() {
 	done
 }
 
+install_nvim() {
+	# install Vim Plugin Manager
+	curl -sSfLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+	# install nvim with custom profile
+	set_input "Install custom nvim profile?"  && \
+	git clone --depth=1 https://github.com/MGSousa/nvimrc.git ~/.vim && \
+	sh ~/.vim/install.sh && \
+	nvim +PlugInstall
+}
+
 RELEASE="/etc/*-release"
 
 # shellcheck disable=SC2086
@@ -80,24 +92,25 @@ OS=$( (grep ID_LIKE ${RELEASE} || grep ID ${RELEASE}) | awk -F= '{print $2}')
 # install base deps
 if [ "$OS" == "arch" ]; then
 	sudo pacman -Sy && \
-	sudo pacman --noconfirm -Sy git xmonad xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep
+	sudo pacman --noconfirm -Sy git htop xmonad xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep
 
 elif [ "$OS" == "debian" ]; then
 	sudo apt upgrade -y && \
-	sudo apt install -y git xmonad xmobar dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep
+	sudo apt install -y git htop xmonad dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install
+	cabal update && cabal install xmobar --flags="all_extensions"
 fi;
 
 # choose to install dotfiles
 install_dotfiles
+sleep 1
 
 # choose to install mcfly package for smart shell history manager
 install_mcfly
+sleep 1
 
 # choose to install custom nvim profile
-set_input "Install custom nvim profile?"  && \
-git clone --depth=1 https://github.com/MGSousa/nvimrc.git ~/.vim && \
-sh ~/.vim/install.sh && \
-nvim +PlugInstall
+install_nvim
+sleep 1
 
 # choose to restart OS
 set_input "Installation successfull !!\n Do you want to reboot now?" && reboot;
