@@ -47,6 +47,9 @@ install_dotfiles() {
 	git clone "https://mgs_props@bitbucket.org/mgs_props/configs.git" $CFGS
 	shopt -s dotglob	
 	rm -rf "$CFGS"/README.md "$CGFS"/.git && cp -r "$CFGS"/* ~/ && rm -rf "$CFGS"
+
+	# set HOME on xmobarrc
+	sed -i "s|\$HOME|$HOME|" .xmobar/xmobarrc && sed -i "s|\$HOME|$HOME|" .xmobar/xmobarrc_bat
 }
 
 install_mcfly() {
@@ -75,9 +78,6 @@ install_mcfly() {
         	done;
 	done
 }
-
-# choose to install dotfiles
-install_dotfiles
 
 RELEASE="/etc/*-release"
 
@@ -108,8 +108,8 @@ elif [ "$OS" == "debian" ]; then
 		ripgrep
 fi;
 
-# set HOME on xmobarrc
-sed -i "s|\$HOME|$HOME|" .xmobar/xmobarrc && sed -i "s|\$HOME|$HOME|" .xmobar/xmobarrc_bat
+# choose to install dotfiles
+install_dotfiles
 
 # choose to install mcfly package for smart shell history manager
 install_mcfly
