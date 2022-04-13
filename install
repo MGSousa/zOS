@@ -49,7 +49,7 @@ install_dotfiles() {
 	rm -rf "$CFGS"/README.md "$CGFS"/.git && cp -r "$CFGS"/* ~/ && rm -rf "$CFGS"
 
 	# set HOME on xmobarrc
-	sed -i "s|\$HOME|$HOME|" .xmobar/xmobarrc && sed -i "s|\$HOME|$HOME|" .xmobar/xmobarrc_bat
+	sed -i "s|\$HOME|$HOME|" ~/.xmobar/xmobarrc && sed -i "s|\$HOME|$HOME|" ~/.xmobar/xmobarrc_bat
 }
 
 install_mcfly() {
@@ -87,25 +87,11 @@ OS=$( (grep ID_LIKE ${RELEASE} || grep ID ${RELEASE}) | awk -F= '{print $2}')
 # install base deps
 if [ "$OS" == "arch" ]; then
 	sudo pacman -Sy && \
-	sudo pacman --noconfirm -Sy git xmonad xmobar 
-		network-manager-applet lxsession libvirt 
-		libnotify dunst xcompmgr 
-		neofetch xwallpaper neovim shellcheck dialog
-		
-		# install "find" alternative 
-		fd
-		# install ripgrep
-		ripgrep
+	sudo pacman --noconfirm -Sy git xmonad xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep
 
 elif [ "$OS" == "debian" ]; then
 	sudo apt upgrade -y && \
-	sudo apt install -y curl git xmonad xmobar dunst libnotify-bin lxsession 
-		xcompmgr neofetch xwallpaper neovim shellcheck dialog
-	
-		# install "find" alternative
-		fd-find
-		# install ripgrep
-		ripgrep
+	sudo apt install -y git xmonad xmobar dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep
 fi;
 
 # choose to install dotfiles
