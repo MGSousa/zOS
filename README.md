@@ -8,7 +8,7 @@ Install a set of custom dot files
 
 ## Install
 ```sh
-./install
+bash <(https://bitbucket.org/mgs_props/zos/src/master/install)
 ```
 
 ## TODOs
