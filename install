@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$(id -u)" = 0 ]; then
-    echo "###### ZORIX-OS ######"
+    echo "###### zOS ######"
     echo "This script MUST NOT be run as root user since it makes changes"
     echo "to the \$HOME directory of the \$USER executing this script."
     echo "The \$HOME directory of the root user is, of course, '/root'."
@@ -20,10 +20,39 @@ fi
 set -eo pipefail
 
 # use trap for prefixes on stdOut and stdErr
-exec > >(trap "" INT TERM; sed 's/^/zorix: /')
-exec 2> >(trap "" INT TERM; sed 's/^/zorix: (error) /' >&2)
+set_trap() {
+	exec > >(trap "" INT TERM; sed 's/^/zorix: /')
+	exec 2> >(trap "" INT TERM; sed 's/^/zorix: (error) /' >&2)
+}
+
+unset_trap() {
+	trap - INT TERM
+}
+
+set_input() {
+	unset_trap
+	echo "################"
+	echo "### zOS ###"
+	echo "################"
+
+	echo " -  Asked: '$1'"
+	dialog --keep-tite --colors --title "Zorix OS " --yes-label "Yes" --no-label "No" --yesno "$1" 9 60
+}
+
+install_dotfiles() {
+	set_input "Do you want install custom dotfiles?" || return;
+	set_trap
+
+	CFGS="./zos_configs"
+	git clone "https://mgs_props@bitbucket.org/mgs_props/configs.git" $CFGS
+	shopt -s dotglob	
+	rm -rf "$CFGS"/README.md "$CGFS"/.git && cp -r "$CFGS"/* ~/ && rm -rf "$CFGS"
+}
 
 install_mcfly() {
+	set_input "Do you want install pkg mcfly for smart search history?" || return;
+	set_trap
+
 	AVAILABLE_SHELLS=$(tail -n +3 < /etc/shells)
 	WD_SHELLS=('bash' 'zsh' 'fish')
 
@@ -47,6 +76,8 @@ install_mcfly() {
 	done
 }
 
+# choose to install dotfiles
+install_dotfiles
 
 RELEASE="/etc/*-release"
 
@@ -80,15 +111,15 @@ fi;
 # set HOME on xmobarrc
 sed -i "s|\$HOME|$HOME|" .xmobar/xmobarrc && sed -i "s|\$HOME|$HOME|" .xmobar/xmobarrc_bat
 
-# install mcfly package for smart shell history manager
+# choose to install mcfly package for smart shell history manager
 install_mcfly
 
 # choose to install custom nvim profile
-dialog --colors --title "Zorix OS " --yes-label "Yes" --no-label "No" --yesno "Install custom nvim profile?" 9 60 || exit 1;
-git clone --depth=1 https://github.com/MGSousa/nvimrc.git ~/.vim
-sh ~/.vim/install.sh
+set_input "Install custom nvim profile?"  && \
+git clone --depth=1 https://github.com/MGSousa/nvimrc.git ~/.vim && \
+sh ~/.vim/install.sh && \
 nvim +PlugInstall
 
 # choose to restart OS
-dialog --colors --title "Zorix OS " --yes-label "Yes" --no-label "No" --yesno "Installation successfull !!\n Do you want to reboot now?" 9 60 && reboot;
+set_input "Installation successfull !!\n Do you want to reboot now?" && reboot;
 
