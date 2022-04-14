@@ -96,8 +96,8 @@ if [ "$OS" == "arch" ]; then
 
 elif [ "$OS" == "debian" ]; then
 	sudo apt upgrade -y && \
-	sudo apt install -y git htop xmonad dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install
-	cabal update && cabal install xmobar --flags="all_extensions"
+	sudo apt install -y git htop xmonad libxpm-dev dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install
+	cabal update && cabal install xmobar --flags="with_inotify with_xpm with_xft"
 fi;
 
 # choose to install dotfiles
