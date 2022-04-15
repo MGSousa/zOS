@@ -92,12 +92,13 @@ OS=$( (grep ID_LIKE ${RELEASE} || grep ID ${RELEASE}) | awk -F= '{print $2}')
 # install base deps
 if [ "$OS" == "arch" ]; then
 	sudo pacman -Sy && \
-	sudo pacman --noconfirm -Sy git htop xmonad dmenu xdotool xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep
+	sudo pacman --noconfirm -Sy git htop xmonad alacritty dmenu xdotool xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep
 
 elif [ "$OS" == "debian" ]; then
 	sudo apt upgrade -y && \
-	sudo apt install -y git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install alacritty
-	cabal update && cabal install xmobar --flags="with_inotify with_xpm with_xft"
+	sudo apt install -y git htop xmonad libxpm-dev alacritty xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install alacritty
+	cabal update && cabal install xmobar --flags="with_inotify with_xpm with_xft" && \
+	sudo ln -s /home/ms/.cabal/bin/xmobar /usr/local/bin/xmobar
 fi;
 
 # choose to install dotfiles
