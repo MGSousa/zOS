@@ -21,67 +21,76 @@ set -eo pipefail
 
 # TODO: for now not used - trap for prefixes on stdOut and stdErr
 set_trap() {
-	exec > >(trap "" INT TERM; sed 's/^/zorix: /')
-	exec 2> >(trap "" INT TERM; sed 's/^/zorix: (error) /' >&2)
+        exec > >(trap "" INT TERM; sed 's/^/zorix: /')
+        exec 2> >(trap "" INT TERM; sed 's/^/zorix: (error) /' >&2)
 }
 
 set_input() {
-	printf "\n"
-	echo "::::::::::::::::"
-	echo "::::: zOS ::::::"
-	echo "################"
+        printf "\n"
+        echo "::::::::::::::::"
+        echo "::::: zOS ::::::"
+        echo "################"
 
-	echo " -  Asked: '$1'"
-	dialog --keep-tite --colors --title "Zorix OS " --yes-label "Yes" --no-label "No" --yesno "$1" 9 60
+        echo " -  Asked: '$1'"
+        dialog --keep-tite --colors --title "Zorix OS " --yes-label "Yes" --no-label "No" --yesno "$1" 9 60
 }
 
 install_dotfiles() {
-	set_input "Do you want install custom dotfiles?" || return 0;
-	
-	CFGS="./zos_configs"
-	git clone "https://mgs_props@bitbucket.org/mgs_props/configs.git" $CFGS
-	shopt -s dotglob	
-	rm -rf "$CFGS"/README.md "$CGFS"/.git && cp -r "$CFGS"/* ~/ && rm -rf "$CFGS"
+        set_input "Do you want install custom dotfiles?" || return 0;
 
-	# set HOME on xmobarrc
-	sed -i "s|\$HOME|$HOME|" ~/.xmobar/xmobarrc && sed -i "s|\$HOME|$HOME|" ~/.xmobar/xmobarrc_bat
+        CFGS="./zos_configs"
+        git clone "https://mgs_props@bitbucket.org/mgs_props/configs.git" $CFGS
+        shopt -s dotglob        
+        rm -rf $CFGS/README.md $CFGS/.git && cp -r $CFGS/* ~/ && rm -rf "$CFGS"
+
+        # set HOME on xmobarrc
+        sed -i "s|\$HOME|$HOME|" ~/.xmobar/xmobarrc && sed -i "s|\$HOME|$HOME|" ~/.xmobar/xmobarrc_bat
+}
+
+install_term() {
+    set_input "Do you want to install Alacritty?" || return 0;
+
+    TAG_NAME=$(curl -sSLH "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/barnumbirr/alacritty-debian/releases?page=1&per_page=1" | jq -r ".[].tag_name")
+    
+    # shellcheck disable=SC2086
+    wget -nv https://github.com/barnumbirr/alacritty-debian/releases/download/${TAG_NAME}/alacritty_${TAG_NAME/v/""}_amd64_bullseye.deb -O alacritty && sudo dpkg -i alacritty
 }
 
 install_mcfly() {
-	set_input "Do you want install pkg mcfly for smart search history?" || return 0;
+        set_input "Do you want install pkg mcfly for smart search history?" || return 0;
 
-	AVAILABLE_SHELLS=$(tail -n +3 < /etc/shells)
-	WD_SHELLS=('bash' 'zsh' 'fish')
+        AVAILABLE_SHELLS=$(tail -n +3 < /etc/shells)
+        WD_SHELLS=('bash' 'zsh' 'fish')
 
-	curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly --force || return 1
-	
-	for shell in $AVAILABLE_SHELLS; do
-        	CSH=$(echo "$shell" | tac -s'/' | head -1)
+        curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly --force || return 1
+        
+        for shell in $AVAILABLE_SHELLS; do
+                CSH=$(echo "$shell" | tac -s'/' | head -1)
 
-        	for k in "${!WD_SHELLS[@]}"; do
+                for k in "${!WD_SHELLS[@]}"; do
 
-                	if [ "$CSH" = "${WD_SHELLS[k]}" ]; then
-                        	if [ "$CSH" = "fish" ]; then
-                                	echo -n "mcfly init $CSH | source" >> ~/.config/fish/config.fish
-                        	else
-                                	# shellcheck disable=SC2016 disable=SC2086
-                                	echo -n 'eval "$(mcfly init '$CSH')"' >> ~/."$CSH"rc
-                        	fi;
-                        	unset 'WD_SHELLS[k]'
-                	fi;
-        	done;
-	done
+                        if [ "$CSH" = "${WD_SHELLS[k]}" ]; then
+                                if [ "$CSH" = "fish" ]; then
+                                        echo -n "mcfly init $CSH | source" >> ~/.config/fish/config.fish
+                                else
+                                        # shellcheck disable=SC2016 disable=SC2086
+                                        echo -n 'eval "$(mcfly init '$CSH')"' >> ~/."$CSH"rc
+                                fi;
+                                unset 'WD_SHELLS[k]'
+                        fi;
+                done;
+        done
 }
 
 install_nvim() {
-	# install Vim Plugin Manager
-	curl -sSfLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+        # install Vim Plugin Manager
+        curl -sSfLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
-	# install nvim with custom profile
-	set_input "Install custom nvim profile?"  && \
-	git clone --depth=1 https://github.com/MGSousa/nvimrc.git ~/.vim && \
-	sh ~/.vim/install.sh && \
-	nvim +PlugInstall
+        # install nvim with custom profile
+        set_input "Install custom nvim profile?" || return 0;
+        git clone --depth=1 https://github.com/MGSousa/nvimrc.git ~/.vim && \
+        sh ~/.vim/install.sh && \
+        nvim +PlugInstall
 }
 
 RELEASE="/etc/*-release"
@@ -97,14 +106,23 @@ case "$OS" in
     ;;
   "debian")
     sudo apt upgrade -y && \
-    sudo apt install -y git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install alacritty
-    cabal update && cabal install xmobar --flags="with_inotify with_xpm with_xft" && \
-    sudo ln -s /home/ms/.cabal/bin/xmobar /usr/local/bin/xmobar
+    sudo apt install -y git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install
+    
+    # choose to install alacritty stable version
+    install_term
+
+    # check if xmobar is already compiled
+    XMOBAR_VERSION=$(cabal list xmobar | head -4 | tail -1 | awk -F':' '{print $2}')
+    if [ -z "$XMOBAR_VERSION" ]; then
+        # install cabal utilities
+        cabal update && cabal install xmobar --flags="with_inotify with_xpm with_xft" && \
+        sudo ln -s /home/ms/.cabal/bin/xmobar /usr/local/bin/xmobar
+    fi;
     ;;
   *)
     echo "Current distribution [$OS] is not supported for now!"
     exit 1
-esac	
+esac    
 
 # choose to install dotfiles
 install_dotfiles
@@ -120,4 +138,3 @@ sleep 1
 
 # choose to restart OS
 set_input "Installation successfull !!\n Do you want to reboot now?" && reboot;
-
