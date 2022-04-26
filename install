@@ -10,13 +10,6 @@ if [ "$(id -u)" = 0 ]; then
     exit 1
 fi
 
-# check if current system has X server installed and enabled
-if ! timeout 1s xset q &>/dev/null; then
-    echo "No X server at \$DISPLAY [$DISPLAY]" >&2
-    # TODO: install and enable X server
-    exit 1
-fi
-
 set -eo pipefail
 
 # TODO: for now not used - trap for prefixes on stdOut and stdErr
@@ -32,7 +25,26 @@ set_input() {
         echo "################"
 
         echo " -  Asked: '$1'"
-        dialog --keep-tite --colors --title "Zorix OS " --yes-label "Yes" --no-label "No" --yesno "$1" 9 60
+	command -v dialog 1>/dev/null
+	DL_STATUS=$?
+	if (( DL_STATUS == 1 )); then
+	    PS3=$1
+	    CHOICE=("Yes" "No")
+	    select result in "${CHOICE[@]}"; do
+    		case $result in
+         	     Yes | No)
+   			echo "Choosed $result"
+            	    	return 0
+            		;;
+         	     *)
+            		echo "invalid option $result"
+			break
+            		;;
+    	        esac
+	    done
+	else
+		dialog --keep-tite --colors --title "Zorix OS " --yes-label "Yes" --no-label "No" --yesno "$1" 9 60
+	fi;
 }
 
 install_dotfiles() {
@@ -93,6 +105,11 @@ install_nvim() {
         nvim +PlugInstall
 }
 
+# check if current system has X server installed and enabled
+if ! timeout 1s xset q &>/dev/null; then
+    set_input "No X server available at \$DISPLAY [$DISPLAY]!\n Do you want to proceed, even so?" || echo "Exited!" && exit 1
+fi
+
 RELEASE="/etc/*-release"
 
 # shellcheck disable=SC2086
@@ -102,11 +119,14 @@ OS=$( (grep ID_LIKE ${RELEASE} || grep ID ${RELEASE}) | awk -F= '{print $2}')
 case "$OS" in 
   "arch")
     sudo pacman -Sy && \
-    sudo pacman --noconfirm -Sy git htop xmonad alacritty dmenu xdotool xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep
+    sudo pacman --noconfirm -Sy git htop xmonad alacritty dmenu xdotool xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep shellcheck
     ;;
   "debian")
-    sudo apt upgrade -y && \
-    sudo apt install -y git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install
+    sudo apt update && \
+    sudo apt install -y git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install shellcheck
+    
+    # install Fast Node Manager package
+    curl -fsSL https://fnm.vercel.app/install | bash
     
     # choose to install alacritty stable version
     install_term
@@ -114,6 +134,9 @@ case "$OS" in
     # check if xmobar is already compiled
     XMOBAR_VERSION=$(cabal list xmobar | head -4 | tail -1 | awk -F':' '{print $2}')
     if [ -z "$XMOBAR_VERSION" ]; then
+	# choose to install xmobar
+	set_input "Do you want to install xmobar?" && \
+
         # install cabal utilities
         cabal update && cabal install xmobar --flags="with_inotify with_xpm with_xft" && \
         sudo ln -s /home/ms/.cabal/bin/xmobar /usr/local/bin/xmobar
