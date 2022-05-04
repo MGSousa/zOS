@@ -68,13 +68,14 @@ install_term() {
     wget -nv https://github.com/barnumbirr/alacritty-debian/releases/download/${TAG_NAME}/alacritty_${TAG_NAME/v/""}_amd64_bullseye.deb -O alacritty && sudo dpkg -i alacritty
 }
 
-install_mcfly() {
+install_mcfly() {	
         set_input "Do you want install pkg mcfly for smart search history?" || return 0;
 
         AVAILABLE_SHELLS=$(tail -n +3 < /etc/shells)
         WD_SHELLS=('bash' 'zsh' 'fish')
 
-        curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly --force || return 1
+	TAG=$(curl -w "%{url_effective}" -sSLI https://github.com/cantino/mcfly/releases/latest -o /dev/null | awk -F'v' '{print $2}')
+        curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly --tag "v$TAG" --force || return 1
         
         for shell in $AVAILABLE_SHELLS; do
                 CSH=$(echo "$shell" | tac -s'/' | head -1)
@@ -107,7 +108,7 @@ install_nvim() {
 
 # check if current system has X server installed and enabled
 if ! timeout 1s xset q &>/dev/null; then
-    set_input "No X server available at \$DISPLAY [$DISPLAY]!\n Do you want to proceed, even so?" || echo "Exited!" && exit 1
+    set_input "No X server available at \$DISPLAY [$DISPLAY]!\n Do you want to proceed, even so?" || (echo "Exited!" && exit 1)
 fi
 
 RELEASE="/etc/*-release"
@@ -126,7 +127,7 @@ case "$OS" in
     sudo apt install -y git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install shellcheck
     
     # install Fast Node Manager package
-    curl -fsSL https://fnm.vercel.app/install | bash
+    command -v fnm &>/dev/null || curl -fsSL https://fnm.vercel.app/install | bash
     
     # choose to install alacritty stable version
     install_term
