@@ -8,7 +8,7 @@ Install a set of custom dot files
 
 ## Install
 ```sh
-bash <(curl -sSL https://bitbucket.org/mgs_props/zos/src/master/install)
+bash <(curl -sSL https://github.com/MGSousa/zOS/blob/master/install)
 ```
 
 ## TODOs

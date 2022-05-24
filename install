@@ -23,8 +23,15 @@ set_input() {
         echo "::::::::::::::::"
         echo "::::: zOS ::::::"
         echo "################"
-
-        echo " -  Asked: '$1'"
+	
+	echo " -  Asked: '$1'"
+	
+	# check if is running in a TTY
+	if [ -t 0 ]; then
+	    echo " -- not a tty: automatic accepted"
+	    return 0;
+	fi;
+        
 	command -v dialog 1>/dev/null
 	DL_STATUS=$?
 	if (( DL_STATUS == 1 )); then
