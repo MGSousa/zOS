@@ -8,7 +8,7 @@ Install a set of custom dot files
 
 ## Install
 ```sh
-bash <(curl -sSL https://github.com/MGSousa/zOS/blob/master/install)
+git clone https://github.com/MGSousa/zOS && cd zOS && rm -f README.md && chmod +x install
 ```
 
 ## TODOs
