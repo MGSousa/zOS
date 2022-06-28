@@ -26,8 +26,8 @@ set_input() {
 	
 	echo " -  Asked: '$1'"
 	
-	# check if is running in a TTY
-	if [ -t 0 ]; then
+	# check if is not running in a terminal
+	if [ ! -t 0 ]; then
 	    echo " -- not a tty: automatic accepted"
 	    return 0;
 	fi;
