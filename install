@@ -127,11 +127,11 @@ OS=$( (grep ID_LIKE ${RELEASE} || grep ID ${RELEASE}) | awk -F= '{print $2}')
 case "$OS" in 
   "arch")
     sudo pacman -Sy && \
-    sudo pacman --noconfirm -Sy git htop xmonad alacritty dmenu xdotool xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep shellcheck
+    sudo pacman --noconfirm -Sy zip git htop xmonad alacritty dmenu xdotool xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep shellcheck
     ;;
   "debian")
     sudo apt update && \
-    sudo apt install -y git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install shellcheck
+    sudo apt install -y zip git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install shellcheck
     
     # install Fast Node Manager package
     command -v fnm &>/dev/null || curl -fsSL https://fnm.vercel.app/install | bash
