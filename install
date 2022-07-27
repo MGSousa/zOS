@@ -12,6 +12,10 @@ fi
 
 set -eo pipefail
 
+# set new tmp directory
+TMP_DIR=$(mktemp -d) && trap "rm -rf ${TMP_DIR}" EXIT
+cd "${TMP_DIR}"
+
 # TODO: for now not used - trap for prefixes on stdOut and stdErr
 set_trap() {
         exec > >(trap "" INT TERM; sed 's/^/zorix: /')
@@ -128,10 +132,17 @@ case "$OS" in
   "arch")
     sudo pacman -Sy && \
     sudo pacman --noconfirm -Sy zip git htop xmonad alacritty dmenu xdotool xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep shellcheck
+    
+    # install dmscripts
+    yay -S dmscripts-git
     ;;
   "debian")
     sudo apt update && \
     sudo apt install -y zip git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install shellcheck
+    
+    # install dmscripts
+    git clone https://gitlab.com/dwt1/dmscripts.git && cd dmscripts
+    sudo make clean build && sudo make install
     
     # install Fast Node Manager package
     command -v fnm &>/dev/null || curl -fsSL https://fnm.vercel.app/install | bash
