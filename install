@@ -125,45 +125,54 @@ fi
 RELEASE="/etc/*-release"
 
 # shellcheck disable=SC2086
-OS=$( (grep ID_LIKE ${RELEASE} || grep ID ${RELEASE}) | awk -F= '{print $2}')
+OSS=$( (grep ID_LIKE ${RELEASE} || grep ID ${RELEASE}) | awk -F= '{print $2}' | tr -d '"')
 
 # install base deps
-case "$OS" in 
-  "arch")
-    sudo pacman -Sy && \
-    sudo pacman --noconfirm -Sy zip git htop xmonad alacritty dmenu xdotool xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep shellcheck
+# filter each OS like text
+osarr=($OS)
+eachOs=${#osarr[@]}
+for OS in $OSS; do
+    case "$OS" in
+        arch)
+    	  sudo pacman -Sy && \
+          sudo pacman --noconfirm -Sy zip git htop xmonad alacritty dmenu xdotool xmobar network-manager-applet lxsession libvirt libnotify dunst xcompmgr neofetch xwallpaper neovim shellcheck dialog fd ripgrep shellcheck
     
-    # install dmscripts
-    yay -S dmscripts-git
-    ;;
-  "debian")
-    sudo apt update && \
-    sudo apt install -y zip git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install shellcheck
+          # install dmscripts
+          yay -S dmscripts-git
+	  break
+          ;;
+        ubuntu|debian)
+          sudo apt update && \
+          sudo apt install -y zip git htop xmonad libxpm-dev xdotool suckless-tools dunst libnotify-bin lxsession xcompmgr neofetch xwallpaper neovim shellcheck dialog fd-find ripgrep cabal-install shellcheck
     
-    # install dmscripts
-    git clone https://gitlab.com/dwt1/dmscripts.git && cd dmscripts
-    sudo make clean build && sudo make install
+          # install dmscripts
+          git clone https://gitlab.com/dwt1/dmscripts.git && cd dmscripts
+          sudo make clean build && sudo make install
     
-    # install Fast Node Manager package
-    command -v fnm &>/dev/null || curl -fsSL https://fnm.vercel.app/install | bash
+          # install Fast Node Manager package
+          command -v fnm &>/dev/null || curl -fsSL https://fnm.vercel.app/install | bash
     
-    # choose to install alacritty stable version
-    install_term
+          # choose to install alacritty stable version
+          install_term
 
-    # check if xmobar is already compiled
-    XMOBAR_VERSION=$(cabal list xmobar | head -4 | tail -1 | awk -F':' '{print $2}')
-    if [ -z "$XMOBAR_VERSION" ]; then
-	# choose to install xmobar
-	set_input "Do you want to install xmobar?" && \
+          # check if xmobar is already compiled
+          XMOBAR_VERSION=$(cabal list xmobar | head -4 | tail -1 | awk -F':' '{print $2}')
+          if [ -z "$XMOBAR_VERSION" ]; then
+	      # choose to install xmobar
+	      set_input "Do you want to install xmobar?" && \
 
-        # install cabal utilities
-        cabal update && cabal install xmobar --flags="with_inotify with_xpm with_xft" && \
-        sudo ln -s /home/ms/.cabal/bin/xmobar /usr/local/bin/xmobar
-    fi;
-    ;;
-  *)
-    echo "Current distribution [$OS] is not supported for now!"
-    exit 1
+              # install cabal utilities
+              cabal update && cabal install xmobar --flags="with_inotify with_xpm with_xft" && \
+              sudo ln -s /home/ms/.cabal/bin/xmobar /usr/local/bin/xmobar
+          fi;
+	  break
+        ;;
+        *)
+	  eachOs=$((eachOs - 1))
+	  if (( eachOs == 0 )); then
+              echo "This distribution [$OS] is not supported!"
+              exit 1
+	  fi;
 esac    
 
 # choose to install dotfiles
